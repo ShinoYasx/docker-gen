@@ -1,12 +1,24 @@
+FROM golang:alpine as build
+LABEL author="Jason Wilder <mail@jasonwilder.com>"
+LABEL maintainer="Hugo Haldi <hugo.haldi@gmail.com>"
+
+RUN apk add --no-cache --virtual .run-deps \
+    make git
+
+WORKDIR /usr/src/docker-gen
+
+COPY . .
+
+RUN go get -d ./...
+RUN make
+
 FROM alpine:latest
-LABEL maintainer="Jason Wilder <mail@jasonwilder.com>"
 
-RUN apk -U add openssl
+RUN apk add --no-cache --virtual .run-deps \
+    openssl
 
-ENV VERSION 0.7.3
-ENV DOWNLOAD_URL https://github.com/jwilder/docker-gen/releases/download/$VERSION/docker-gen-alpine-linux-amd64-$VERSION.tar.gz
 ENV DOCKER_HOST unix:///tmp/docker.sock
 
-RUN wget -qO- $DOWNLOAD_URL | tar xvz -C /usr/local/bin
+COPY --from=build /usr/src/docker-gen/docker-gen /usr/local/bin
 
 ENTRYPOINT ["/usr/local/bin/docker-gen"]
